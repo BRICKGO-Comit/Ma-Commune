@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "MA COMMUNE",
+    "slug": "ma-commune",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "ma-commune",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#2D6A4F",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.macommune.app"
+    },
+    "android": {
+      "package": "com.macommune.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#2D6A4F"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "MA COMMUNE a besoin de votre localisation pour les signalements."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MA COMMUNE a besoin d'accéder à vos photos pour les signalements."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
