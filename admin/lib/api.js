@@ -30,11 +30,11 @@ export async function login(email, password) {
 
   // Get commune details if applicable
   let commune_slug = null;
-  if (user.commune_id) {
+  if (profile.commune_id) {
     const { data: commune } = await supabase
       .from('communes')
       .select('slug')
-      .eq('id', user.commune_id)
+      .eq('id', profile.commune_id)
       .single();
     if (commune) commune_slug = commune.slug;
   }
