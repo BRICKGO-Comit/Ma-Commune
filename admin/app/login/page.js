@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { login } from '../../lib/api';
 
 export default function LoginPage() {
@@ -22,9 +23,9 @@ export default function LoginPage() {
       
       const user = result.data.user;
       if (user.role === 'super_admin') {
-        router.push('/admin'); // Special route for super-admin
+        router.push('/admin');
       } else {
-        const slug = result.data.commune_slug || 'dashboard'; // We need commune_slug in response
+        const slug = result.data.commune_slug || 'dashboard';
         router.push(`/${slug}`);
       }
     } catch (err) {
@@ -35,45 +36,57 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="logo-icon">🏛️</div>
+    <div className="login-page premium-emerald-bg">
+      <div className="login-card glass-morphism">
+        <div className="logo-wrapper-admin">
+          <Image 
+            src="/icon.png" 
+            alt="MA COMMUNE" 
+            width={80} 
+            height={80} 
+            className="admin-main-logo"
+            priority
+          />
+        </div>
         <h1>MA COMMUNE</h1>
-        <p className="subtitle">Espace Administration</p>
+        <p className="subtitle">Espace Administration Municipale</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email</label>
+            <label>ID ADMINISTRATEUR</label>
             <input
               type="email"
               placeholder="admin@macommune.ci"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className="admin-input"
             />
           </div>
 
           <div className="form-group">
-            <label>Mot de passe</label>
+            <label>MOT DE PASSE</label>
             <input
               type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              className="admin-input"
             />
           </div>
 
-          {error && <p className="error-msg">{error}</p>}
+          {error && <p className="error-msg-admin">{error}</p>}
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? 'Connexion...' : 'Se connecter'}
+          <button type="submit" className="btn-admin-premium" disabled={loading}>
+            {loading ? 'VÉRIFICATION...' : 'ACCÉDER AU DASHBOARD'}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#999' }}>
-          Identifiants test : admin@macommune.ci / admin123
-        </p>
+        <div className="login-footer-info">
+          <p>© 2026 Plateforme Nationale Ma Commune</p>
+          <div className="dot-indicator"></div>
+        </div>
       </div>
     </div>
   );

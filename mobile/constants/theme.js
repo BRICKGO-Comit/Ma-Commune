@@ -1,55 +1,62 @@
+/**
+ * MA COMMUNE — Design System (Premium Emerald & Gold Edition)
+ * Optimized for Glassmorphism, modern shadows, and high contrast.
+ */
+
 export const Colors = {
-  primary: '#2D6A4F',
-  primaryDark: '#1B4332',
-  primaryLight: '#40916C',
-  accent: '#F4C430',
-  accentLight: '#F7D76C',
-  accentDark: '#D4A817',
-
+  // Brand Colors (Derived from Official Logo)
+  primary: '#2D6A4F',       // Emerald Green
+  primaryDark: '#1B4332',   // Deep Forest Green
+  primaryLight: '#52B788',  // Mint/Light Emerald
+  accent: '#FFD700',        // Golden Yellow (from logo dots)
+  accentDark: '#D97706',    // Amber/Gold
+  
+  // Neutral Colors
   white: '#FFFFFF',
-  background: '#F5F7F5',
-  surface: '#FFFFFF',
-  card: '#FFFFFF',
+  black: '#000000',
+  background: '#F8FAF5',    // Subtle off-white/greenish tint
+  slate: '#1E293B',         // Deep slate for typography
+  
+  // UI Colors
+  text: '#1B4332',          // Dark Green text
+  textSecondary: '#64748B', // Slate text
+  textLight: '#94A3B8',
+  border: '#E2E8F0',
+  error: '#EF4444',
+  success: '#10B981',
+  warning: '#F59E0B',
+  
+  // Glassmorphism Helpers
+  glass: 'rgba(255, 255, 255, 0.85)',
+  glassDark: 'rgba(27, 67, 50, 0.8)',
+  glassBorder: 'rgba(255, 255, 255, 0.3)',
+};
 
-  text: '#1B4332',
-  textSecondary: '#6C757D',
-  textLight: '#ADB5BD',
-  textWhite: '#FFFFFF',
-
-  border: '#E9ECEF',
-  divider: '#DEE2E6',
-
-  success: '#2D6A4F',
-  successLight: '#D8F3DC',
-  warning: '#F4A261',
-  warningLight: '#FEF3C7',
-  danger: '#E63946',
-  dangerLight: '#FFF0F0',
-  info: '#457B9D',
-  infoLight: '#EEF4F8',
-
-  overlay: 'rgba(0,0,0,0.5)',
-  shadow: 'rgba(0,0,0,0.08)',
+export const Gradients = {
+  emerald: ['#2D6A4F', '#1B4332'],
+  gold: ['#FFD700', '#D97706'],
+  mesh: ['#1B4332', '#2D6A4F', '#40916C'],
+  whiteGlass: ['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.7)'],
 };
 
 export const Fonts = {
-  sizes: {
-    xs: 11,
-    sm: 13,
-    md: 15,
-    lg: 17,
-    xl: 20,
-    xxl: 26,
-    xxxl: 32,
-  },
   weights: {
-    light: '300',
-    regular: '400',
-    medium: '500',
-    semibold: '600',
-    bold: '700',
-    extrabold: '800',
+    regular: 'System',
+    medium: 'System',
+    semibold: 'System',
+    bold: 'System',
+    extrabold: 'System',
   },
+  sizes: {
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 20,
+    xxl: 24,
+    xxxl: 32,
+    huge: 48,
+  }
 };
 
 export const Spacing = {
@@ -62,9 +69,34 @@ export const Spacing = {
 };
 
 export const Radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  full: 999,
+  xs: 6,
+  sm: 12,
+  md: 18,
+  lg: 24,
+  xl: 32,
+  full: 9999,
+};
+
+export const Shadows = {
+  soft: {
+    shadowColor: '#1B4332',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  medium: {
+    shadowColor: '#1B4332',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  premium: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.25,
+    shadowRadius: 40,
+    elevation: 15,
+  },
 };

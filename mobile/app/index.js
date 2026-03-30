@@ -1,67 +1,92 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, withSequence } from 'react-native-reanimated';
-import { Colors, Fonts } from '../constants/theme';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withDelay, 
+  withRepeat,
+  interpolate,
+  Extrapolate
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors, Fonts, Gradients, Radius } from '../constants/theme';
+
+const { width } = Dimensions.get('window');
 
 export default function SplashScreen() {
   const router = useRouter();
-  const scale = useSharedValue(0.5);
+  const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
-  const titleOpacity = useSharedValue(0);
-  const subtitleOpacity = useSharedValue(0);
-  const sloganOpacity = useSharedValue(0);
+  const pulse = useSharedValue(1);
 
   useEffect(() => {
-    // Animate in
-    scale.value = withTiming(1, { duration: 800 });
-    opacity.value = withTiming(1, { duration: 600 });
-    titleOpacity.value = withDelay(400, withTiming(1, { duration: 600 }));
-    subtitleOpacity.value = withDelay(700, withTiming(1, { duration: 600 }));
-    sloganOpacity.value = withDelay(1200, withTiming(1, { duration: 800 }));
+    // Entrance animations
+    scale.value = withTiming(1, { duration: 1200 });
+    opacity.value = withTiming(1, { duration: 1000 });
+    
+    // Continuous pulse for the logo
+    pulse.value = withRepeat(
+      withTiming(1.05, { duration: 2000 }), 
+      -1, 
+      true
+    );
 
-    // Navigate after animation
+    // Navigation after splash
     const timer = setTimeout(() => {
-      router.replace('/search'); // This will be the commune selector
-    }, 3500);
+      router.replace('/search');
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, []);
 
   const logoStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
     opacity: opacity.value,
+    transform: [
+      { scale: scale.value * pulse.value },
+    ],
   }));
 
-  const titleStyle = useAnimatedStyle(() => ({
-    opacity: titleOpacity.value,
-  }));
-
-  const subtitleStyle = useAnimatedStyle(() => ({
-    opacity: subtitleOpacity.value,
-  }));
-
-  const sloganStyle = useAnimatedStyle(() => ({
-    opacity: sloganOpacity.value,
-    transform: [{ translateY: withTiming(sloganOpacity.value === 1 ? 0 : 10) }]
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(pulse.value, [1, 1.05], [0.3, 0.6], Extrapolate.CLAMP),
+    transform: [{ scale: pulse.value * 1.2 }],
   }));
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.logoContainer, logoStyle]}>
-        <Text style={styles.logoIcon}>🏛️</Text>
-      </Animated.View>
+      <LinearGradient
+        colors={Gradients.mesh}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      
+      {/* Background Decor */}
+      <View style={styles.decorCircle1} />
+      <View style={styles.decorCircle2} />
 
-      <Animated.Text style={[styles.title, titleStyle]}>
-        MA COMMUNE
-      </Animated.Text>
+      <View style={styles.content}>
+        <Animated.View style={[styles.glow, glowStyle]} />
+        <Animated.View style={[styles.logoWrapper, logoStyle]}>
+          <Image 
+            source={require('../assets/logo.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </Animated.View>
 
-      <Animated.Text style={[styles.subtitle, subtitleStyle]}>
-        L'excellence municipale numérique
-      </Animated.Text>
+        <Animated.View style={{ opacity }}>
+          <Text style={styles.title}>MA COMMUNE</Text>
+          <Text style={styles.subtitle}>L'EXCELLENCE MUNICIPALE</Text>
+        </Animated.View>
+      </View>
 
-      <Animated.View style={[styles.sloganContainer, sloganStyle]}>
-        <Text style={styles.sloganText}>Informer • Protéger • Simplifier</Text>
+      <Animated.View style={[styles.footer, { opacity }]}>
+        <Text style={styles.slogan}>Informer • Protéger • Simplifier</Text>
+        <View style={styles.loaderLine}>
+          <Animated.View style={styles.loaderProgress} />
+        </View>
       </Animated.View>
     </View>
   );
@@ -73,50 +98,98 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primaryDark,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
   },
-  logoContainer: {
-    width: 120,
-    height: 120,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 32,
+  content: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
-  logoIcon: {
-    fontSize: 60,
+  logoWrapper: {
+    width: 180,
+    height: 180,
+    backgroundColor: Colors.white,
+    borderRadius: 90,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    marginBottom: 40,
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
+  },
+  glow: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: Colors.accent,
+    opacity: 0.4,
   },
   title: {
-    fontSize: 32,
-    fontWeight: Fonts.weights.extrabold,
+    fontSize: 36,
+    fontWeight: '900',
     color: Colors.white,
-    letterSpacing: 4,
-    marginBottom: 8,
+    letterSpacing: 6,
     textAlign: 'center',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: Fonts.sizes.md,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: Fonts.weights.medium,
-    marginBottom: 40,
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.accent,
+    letterSpacing: 3,
     textAlign: 'center',
+    opacity: 0.9,
   },
-  sloganContainer: {
+  footer: {
     position: 'absolute',
     bottom: 60,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    width: '100%',
   },
-  sloganText: {
+  slogan: {
     color: Colors.white,
-    fontSize: Fonts.sizes.sm,
-    fontWeight: Fonts.weights.bold,
-    letterSpacing: 1,
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 2,
     textTransform: 'uppercase',
+    marginBottom: 20,
+    opacity: 0.7,
+  },
+  loaderLine: {
+    width: width * 0.4,
+    height: 2,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 1,
+    overflow: 'hidden',
+  },
+  loaderProgress: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: Colors.accent,
+  },
+  decorCircle1: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  decorCircle2: {
+    position: 'absolute',
+    bottom: 100,
+    left: -80,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
 });
+
