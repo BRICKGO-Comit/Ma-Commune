@@ -1,6 +1,9 @@
-export const API_URL = 'http://192.168.1.110:3000'; // Adresse IP locale pour accès depuis un téléphone
-// export const API_URL = 'http://10.0.2.2:3000'; // Pour émulateur Android
-// export const API_URL = 'http://localhost:3000'; // Pour iOS simulator
+import { supabase } from '../lib/supabase';
+
+/**
+ * MA COMMUNE — Mobile API Client (Full Supabase Version)
+ * All calls are now direct to Supabase.
+ */
 
 let authToken = null;
 let currentUser = null;
@@ -24,214 +27,321 @@ export function getCurrentUser() {
 export function clearAuth() {
   authToken = null;
   currentUser = null;
-}
-
-async function apiRequest(endpoint, options = {}) {
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(authToken && { Authorization: `Bearer ${authToken}` }),
-      ...options.headers,
-    },
-    ...options,
-  };
-
-  try {
-    const res = await fetch(`${API_URL}${endpoint}`, config);
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Erreur serveur');
-    }
-
-    return data;
-  } catch (err) {
-    if (err.message === 'Network request failed') {
-      throw new Error('Impossible de se connecter au serveur');
-    }
-    throw err;
-  }
+  supabase.auth.signOut();
 }
 
 // ============================================
 // AUTH
 // ============================================
+
 export async function loginUser(email, password) {
-  const result = await apiRequest('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
   });
-  if (result.data) {
-    setAuthToken(result.data.token);
-    setCurrentUser(result.data.user);
-  }
+
+  if (error) throw error;
+
+  // Fetch complementary user data (role, etc.)
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', data.user.id)
+    .single();
+
+  if (userError) throw userError;
+
+  const result = {
+    data: {
+      user: { ...data.user, ...user },
+      token: data.session.access_token
+    }
+  };
+
+  setAuthToken(result.data.token);
+  setCurrentUser(result.data.user);
+
   return result;
 }
 
 export async function registerUser(email, password, full_name, phone) {
-  const result = await apiRequest('/api/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({ email, password, full_name, phone }),
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name,
+        phone,
+      }
+    }
   });
-  if (result.data) {
-    setAuthToken(result.data.token);
-    setCurrentUser(result.data.user);
-  }
+
+  if (error) throw error;
+
+  // Create record in public.users table (if not handled by trigger)
+  const newUser = {
+    id: data.user.id,
+    email,
+    full_name,
+    phone,
+    role: 'citizen',
+    created_at: new Date().toISOString()
+  };
+
+  const { error: insertError } = await supabase.from('users').insert([newUser]);
+  if (insertError) console.error('Users table insert error:', insertError);
+
+  const result = {
+    data: {
+      user: newUser,
+      token: data.session?.access_token || data.user.id
+    }
+  };
+
+  setAuthToken(result.data.token);
+  setCurrentUser(result.data.user);
+
   return result;
 }
 
 export async function getMe() {
-  return apiRequest('/api/auth/me');
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error) throw error;
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  return { data: { ...user, ...profile } };
 }
 
 // ============================================
 // COMMUNES
 // ============================================
+
 export async function fetchCommunes(search = '') {
-  const params = search ? `?search=${encodeURIComponent(search)}` : '';
-  return apiRequest(`/api/communes${params}`);
+  let query = supabase.from('communes').select('*').order('name');
+  if (search) {
+    query = query.ilike('name', `%${search}%`);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return { data };
 }
 
 export async function fetchCommuneById(id) {
-  return apiRequest(`/api/communes/${id}`);
+  const { data, error } = await supabase
+    .from('communes')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return { data };
 }
 
 // ============================================
 // NEWS
 // ============================================
+
 export async function fetchNews(communeId, page = 1) {
-  return apiRequest(`/api/communes/${communeId}/news?page=${page}`);
+  // Pagination simplified for now (fetching all)
+  const { data, error } = await supabase
+    .from('news')
+    .select('*')
+    .eq('commune_id', communeId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return { data };
 }
 
 export async function fetchNewsById(id) {
-  return apiRequest(`/api/news/${id}`);
+  const { data, error } = await supabase
+    .from('news')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return { data };
 }
 
 // ============================================
 // REPORTS
 // ============================================
+
 export async function fetchReports(communeId, status = '') {
-  const params = status ? `?status=${status}` : '';
-  return apiRequest(`/api/communes/${communeId}/reports${params}`);
+  let query = supabase.from('reports').select('*').eq('commune_id', communeId);
+  if (status) query = query.eq('status', status);
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+  return { data };
 }
 
 export async function createReport(communeId, data) {
-  return apiRequest(`/api/communes/${communeId}/reports`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const { data: report, error } = await supabase
+    .from('reports')
+    .insert([{ ...data, commune_id: communeId }])
+    .select()
+    .single();
+  if (error) throw error;
+  return { data: report };
 }
 
 // ============================================
 // CONTACTS
 // ============================================
+
 export async function fetchContacts(communeId) {
-  return apiRequest(`/api/communes/${communeId}/contacts`);
+  const { data, error } = await supabase
+    .from('useful_contacts')
+    .select('*')
+    .eq('commune_id', communeId)
+    .order('sort_order');
+  if (error) throw error;
+  return { data };
 }
 
 // ============================================
 // PROCEDURES
 // ============================================
+
 export async function fetchProcedures(communeId) {
-  return apiRequest(`/api/procedures/${communeId}`);
+  const { data, error } = await supabase
+    .from('procedures')
+    .select('*')
+    .eq('commune_id', communeId);
+  if (error) throw error;
+  return { data };
 }
 
 // ============================================
 // EVENTS (AGENDA)
 // ============================================
+
 export async function fetchEvents(communeId) {
-  return apiRequest(`/api/events/${communeId}`);
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('commune_id', communeId);
+  if (error) throw error;
+  return { data };
 }
 
 // ============================================
 // BUSINESSES
 // ============================================
+
 export async function fetchBusinesses(communeId) {
-  return apiRequest(`/api/businesses/${communeId}`);
+  const { data, error } = await supabase
+    .from('businesses')
+    .select('*')
+    .eq('commune_id', communeId);
+  if (error) throw error;
+  return { data };
 }
 
 export async function fetchMyBusiness() {
-  return apiRequest('/api/businesses/my/business');
+  const { data, error } = await supabase
+    .from('businesses')
+    .select('*')
+    .eq('owner_id', currentUser?.id)
+    .single();
+  if (error) throw error;
+  return { data };
 }
 
 export async function createBusiness(communeId, data) {
-  return apiRequest(`/api/businesses/${communeId}`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const { data: biz, error } = await supabase
+    .from('businesses')
+    .insert([{ ...data, commune_id: communeId, owner_id: currentUser?.id }])
+    .select()
+    .single();
+  if (error) throw error;
+  return { data: biz };
 }
 
 export async function updateBusiness(businessId, data) {
-  return apiRequest(`/api/businesses/${businessId}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
+  const { data: biz, error } = await supabase
+    .from('businesses')
+    .update(data)
+    .eq('id', businessId)
+    .select()
+    .single();
+  if (error) throw error;
+  return { data: biz };
 }
 
 export async function togglePharmacyDuty(businessId, isOnDuty) {
-  return apiRequest(`/api/businesses/${businessId}/duty`, {
-    method: 'PATCH',
-    body: JSON.stringify({ is_on_duty: isOnDuty }),
-  });
+  const { data: biz, error } = await supabase
+    .from('businesses')
+    .update({ is_on_duty: isOnDuty })
+    .eq('id', businessId)
+    .select()
+    .single();
+  if (error) throw error;
+  return { data: biz };
 }
 
 // ============================================
 // EQUIPMENTS
 // ============================================
+
 export async function fetchEquipments(communeId) {
-  return apiRequest(`/api/equipments/${communeId}`);
+  const { data, error } = await supabase
+    .from('equipments')
+    .select('*')
+    .eq('commune_id', communeId);
+  if (error) throw error;
+  return { data };
 }
 
 // ============================================
 // PAYMENTS & TAXES
 // ============================================
+
 export async function fetchPayments(id) {
-  return apiRequest(`/api/payments/${id}`);
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*')
+    .or(`user_id.eq.${id},commune_id.eq.${id}`);
+  if (error) throw error;
+  return { data };
 }
 
 export async function payTax(data) {
-  return apiRequest('/api/payments', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const { data: pay, error } = await supabase
+    .from('payments')
+    .insert([data])
+    .select()
+    .single();
+  if (error) throw error;
+  return { data: pay };
 }
 
 // ============================================
-// UPLOAD (Cloudinary)
+// UPLOAD (Supabase Storage)
 // ============================================
+
 export async function uploadImage(uri, type = 'general') {
-  const formData = new FormData();
-  
-  // Extraire le nom du fichier depuis l'URI
   const filename = uri.split('/').pop();
-  const ext = filename.split('.').pop().toLowerCase();
-  const mimeType = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+  const fileExt = filename.split('.').pop();
+  const filePath = `${type}/${Date.now()}.${fileExt}`;
 
-  formData.append('image', {
-    uri,
-    name: filename,
-    type: mimeType,
-  });
-  formData.append('type', type);
+  // En React Native, on fetch l'URI pour obtenir un Blob
+  const response = await fetch(uri);
+  const blob = await response.blob();
 
-  try {
-    const res = await fetch(`${API_URL}/api/upload`, {
-      method: 'POST',
-      headers: {
-        ...(authToken && { Authorization: `Bearer ${authToken}` }),
-      },
-      body: formData,
-    });
+  const { error } = await supabase.storage
+    .from('images')
+    .upload(filePath, blob);
 
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'Erreur upload');
-    }
-    return data; // { url, public_id, width, height }
-  } catch (err) {
-    if (err.message === 'Network request failed') {
-      throw new Error('Impossible de se connecter au serveur');
-    }
-    throw err;
-  }
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from('images')
+    .getPublicUrl(filePath);
+
+  return { url: data.publicUrl };
 }
